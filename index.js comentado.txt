@@ -1,0 +1,90 @@
+// Importa el módulo 'express' que facilita la creación de aplicaciones web en Node.js.
+const express = require('express');
+
+// Importa el módulo 'http' que permite crear servidores HTTP.
+const http = require('http');
+
+// Importa el módulo 'socket.io' que permite la comunicación en tiempo real entre clientes y servidor.
+const socketIo = require('socket.io');
+
+// Crea una instancia de la aplicación Express.
+const app = express();
+
+// Crea un servidor HTTP utilizando la aplicación Express.
+const server = http.createServer(app);
+
+// Crea una instancia de Socket.IO y la asocia con el servidor HTTP.
+const io = socketIo(server);
+
+// Configura la aplicación Express para servir archivos estáticos desde el directorio 'public'.
+app.use(express.static('public'));
+
+// Crea un mapa para almacenar los usuarios y sus colores.
+const users = new Map();
+
+// Maneja el evento de conexión de un cliente.
+io.on('connection', (socket) => {
+  console.log('a user connected'); // Muestra en consola cuando un usuario se conecta.
+
+  // Asigna un color aleatorio al nuevo usuario.
+  const userColor = getRandomColor();
+  users.set(socket.id, userColor); // Almacena el ID del socket y el color en el mapa de usuarios.
+
+  // Maneja el evento de desconexión de un cliente.
+  socket.on('disconnect', () => {
+    console.log('user disconnected'); // Muestra en consola cuando un usuario se desconecta.
+    users.delete(socket.id); // Elimina al usuario del mapa de usuarios.
+  });
+
+  // Maneja el evento de recepción de un mensaje de chat.
+  socket.on('chat message', (msg) => {
+    // Emite el mensaje a todos los clientes, incluyendo el color del usuario que envió el mensaje.
+    io.emit('chat message', { msg, color: users.get(socket.id) });
+  });
+});
+
+// Define el puerto en el que el servidor escuchará las conexiones.
+const PORT = process.env.PORT || 3000;
+
+// Inicia el servidor y escucha en el puerto definido.
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`); // Muestra en consola cuando el servidor está en funcionamiento.
+});
+
+// Función para generar un color aleatorio en formato hexadecimal.
+function getRandomColor() {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)]; // Añade un carácter aleatorio a la cadena de color.
+  }
+  return color; // Retorna el color generado.
+}
+
+
+
+Explicación General
+Importación de Módulos:
+
+express: Para crear y configurar el servidor web.
+http: Para crear el servidor HTTP.
+socket.io: Para la comunicación en tiempo real entre el servidor y los clientes.
+Creación del Servidor:
+
+Se crea una instancia de express y un servidor HTTP basado en esa instancia.
+Se configura socket.io para trabajar con el servidor HTTP.
+Archivos Estáticos:
+
+app.use(express.static('public')); configura el servidor para servir archivos estáticos desde el directorio public.
+Manejo de Conexiones y Mensajes:
+
+Cuando un cliente se conecta, se le asigna un color aleatorio.
+Se almacenan los colores en un mapa utilizando el ID del socket como clave.
+Se manejan eventos de desconexión y recepción de mensajes de chat.
+Los mensajes de chat se emiten a todos los clientes junto con el color del remitente.
+Inicialización del Servidor:
+
+El servidor escucha en un puerto especificado (por defecto, el puerto 3000) y muestra un mensaje en consola cuando está funcionando.
+Generación de Colores Aleatorios:
+
+La función getRandomColor genera un color aleatorio en formato hexadecimal para asignar a los usuarios.
